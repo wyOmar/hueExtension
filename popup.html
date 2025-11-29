@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Hue Control Panel</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        margin: 10px;
+        min-width: 280px;
+        max-width: 350px;
+      }
+
+      h2 {
+        font-size: 16px;
+        margin: 8px 0;
+      }
+
+      h3 {
+        font-size: 14px;
+        margin: 8px 0 4px;
+      }
+
+      select,
+      button,
+      input[type="range"] {
+        width: 100%;
+        box-sizing: border-box;
+        margin: 4px 0;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 4px 0;
+      }
+
+      .row label {
+        font-size: 13px;
+      }
+
+      .toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .pill-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin: 4px 0;
+      }
+
+      .pill-buttons button {
+        flex: 1 1 30%;
+        font-size: 11px;
+        padding: 4px 6px;
+      }
+
+      #status {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #555;
+      }
+
+      .section {
+        border-top: 1px solid #ddd;
+        padding-top: 6px;
+        margin-top: 6px;
+      }
+
+      .inline-value {
+        font-size: 11px;
+        color: #444;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Hue Control Panel</h2>
+
+    <div>
+      <label for="light-select">Select Light</label>
+      <select id="light-select"></select>
+    </div>
+
+    <div id="light-info">
+      <div class="row">
+        <div class="toggle">
+          <label for="light-onoff">Power</label>
+          <button id="light-onoff">Loading...</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <label for="brightness-slider">
+          Brightness
+          <span id="brightness-value" class="inline-value"></span>
+        </label>
+      </div>
+      <input
+        id="brightness-slider"
+        type="range"
+        min="1"
+        max="254"
+        step="1"
+        value="254"
+      />
+
+      <div class="section">
+        <h3>White Presets</h3>
+        <div class="pill-buttons" id="white-presets">
+          <button data-ct="500">Warm</button>
+          <button data-ct="370">Neutral</button>
+          <button data-ct="250">Cool</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Color Presets</h3>
+        <div class="pill-buttons" id="color-presets">
+          <button data-hue="0">Red</button>
+          <button data-hue="8000">Orange</button>
+          <button data-hue="16000">Yellow</button>
+          <button data-hue="25500">Green</button>
+          <button data-hue="35000">Cyan</button>
+          <button data-hue="45000">Blue</button>
+          <button data-hue="50000">Indigo</button>
+          <button data-hue="56000">Violet</button>
+          <button data-hue="65000">Near Red</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Functions</h3>
+        <div class="row">
+          <label for="function-select">Select Function</label>
+        </div>
+        <select id="function-select"></select>
+        <div class="row" style="margin-top: 4px">
+          <button id="start-function">Start</button>
+          <button id="stop-function">Stop</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="status">Loading lights...</div>
+
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

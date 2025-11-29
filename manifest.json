@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Hue Control Panel",
+  "version": "1.0.0",
+  "description": "Control Philips Hue lights with a nice UI and custom functions.",
+  "permissions": ["storage", "alarms", "scripting"],
+  "host_permissions": ["http://*/api/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Hue Control Panel"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  }
+}
