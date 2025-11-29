@@ -1,12 +1,42 @@
 import { BRIDGE_IP, USERNAME } from "./config.local.js";
+import * as rainbowFn from "./functions/rainbow.js";
 
 let lightsCache = null;
 let lastLightsFetch = 0;
 const LIGHTS_CACHE_MS = 10_000;
 
+// name -> module
 const loadedFunctions = new Map();
+// functionName::lightId -> controller
 const runningFunctions = new Map();
+// lightId -> original state snapshot
+const originalStates = new Map();
 
+// Register functions statically
+function registerFunctions() {
+  const list = [rainbowFn]; // add more modules here later
+
+  loadedFunctions.clear();
+  for (const mod of list) {
+    if (!mod.name || typeof mod.run !== "function") {
+      console.warn(
+        "Function module missing required exports:",
+        mod
+      );
+      continue;
+    }
+    loadedFunctions.set(mod.name, mod);
+  }
+
+  return Array.from(loadedFunctions.entries()).map(
+    ([name, mod]) => ({
+      name,
+      displayName: mod.displayName || name
+    })
+  );
+}
+
+// Hue API
 async function getLights() {
   const now = Date.now();
   if (lightsCache && now - lastLightsFetch < LIGHTS_CACHE_MS) {
@@ -54,34 +84,32 @@ async function setLightState(lightId, state) {
   return res.json();
 }
 
-const FUNCTION_MODULES = [
-  "rainbow.js",
-  "example.js"
-];
+// Extract a minimal, restorable state snapshot from Hue light data
+function extractStateForRestore(lightData) {
+  const state = lightData?.state || {};
+  const restore = {};
 
-async function loadFunctionModules() {
-  const results = [];
+  if ("on" in state) restore.on = state.on;
+  if ("bri" in state) restore.bri = state.bri;
 
-  for (const file of FUNCTION_MODULES) {
-    const path = `./functions/${file}`;
-    try {
-      const mod = await import(path);
-      if (!mod.name || typeof mod.run !== "function") {
-        console.warn(`Function module ${file} missing required exports`);
-        continue;
-      }
-      const fnName = mod.name;
-      loadedFunctions.set(fnName, mod);
-      results.push({
-        name: fnName,
-        displayName: mod.displayName || fnName
-      });
-    } catch (err) {
-      console.error("Error loading function module", file, err);
-    }
+  const colormode = state.colormode;
+  if (colormode === "ct" && "ct" in state) {
+    restore.ct = state.ct;
+  } else if (colormode === "xy" && "xy" in state) {
+    restore.xy = state.xy;
+  } else if (colormode === "hs") {
+    if ("hue" in state) restore.hue = state.hue;
+    if ("sat" in state) restore.sat = state.sat;
+  } else {
+    if ("ct" in state) restore.ct = state.ct;
+    if ("xy" in state) restore.xy = state.xy;
+    if ("hue" in state) restore.hue = state.hue;
+    if ("sat" in state) restore.sat = state.sat;
   }
 
-  return results;
+  // Smooth restore
+  restore.transitiontime = 3;
+  return restore;
 }
 
 function functionKey(functionName, lightId) {
@@ -97,6 +125,24 @@ async function startFunction(functionName, lightId) {
   const key = functionKey(functionName, lightId);
   if (runningFunctions.has(key)) {
     await stopFunction(functionName, lightId);
+  }
+
+  // Snapshot current state if not already snapshotted
+  if (!originalStates.has(lightId)) {
+    try {
+      const current = await getLightState(lightId);
+      const snap = extractStateForRestore(current);
+      originalStates.set(lightId, snap);
+    } catch (e) {
+      console.warn("Could not snapshot light state before function", e);
+    }
+  }
+
+  // Ensure light is ON when a function runs
+  try {
+    await setLightState(lightId, { on: true });
+  } catch (e) {
+    console.warn("Could not set light ON before function", e);
   }
 
   const controller = await mod.run(lightId, setLightState);
@@ -119,16 +165,27 @@ async function stopFunction(functionName, lightId) {
     }
     runningFunctions.delete(key);
   }
+
+  // Restore original state for this light, if we have one
+  const snap = originalStates.get(lightId);
+  if (snap) {
+    try {
+      await setLightState(lightId, snap);
+    } catch (err) {
+      console.error("Error restoring light state after function", err);
+    } finally {
+      originalStates.delete(lightId);
+    }
+  }
 }
 
+// Messages
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     try {
       if (message.type === "INIT_POPUP") {
-        const [lights, functions] = await Promise.all([
-          getLights(),
-          loadFunctionModules()
-        ]);
+        const [lights] = await Promise.all([getLights()]);
+        const functions = registerFunctions();
         sendResponse({ lights, functions });
         return;
       }

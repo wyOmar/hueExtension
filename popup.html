@@ -2,23 +2,25 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Hue Control Panel</title>
+    <title>Light Control</title>
     <style>
+      :root {
+        color-scheme: dark;
+      }
+
       body {
         font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
         margin: 10px;
         min-width: 280px;
         max-width: 350px;
+        background-color: #121212;
+        color: #e0e0e0;
       }
 
       h2 {
-        font-size: 16px;
-        margin: 8px 0;
-      }
-
-      h3 {
-        font-size: 14px;
-        margin: 8px 0 4px;
+        font-size: 18px;
+        margin: 8px 0 12px;
+        color: #ffffff;
       }
 
       select,
@@ -26,79 +28,139 @@
       input[type="range"] {
         width: 100%;
         box-sizing: border-box;
-        margin: 4px 0;
+        margin: 6px 0;
+        font-family: inherit;
+        font-size: 14px;
+      }
+
+      select,
+      button {
+        background-color: #1f1f1f;
+        color: #e0e0e0;
+        border: 1px solid #424242;
+        border-radius: 8px;
+      }
+
+      input[type="range"] {
+        accent-color: #90caf9;
       }
 
       .row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin: 4px 0;
-      }
-
-      .row label {
-        font-size: 13px;
-      }
-
-      .toggle {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        margin: 6px 0;
       }
 
       .pill-buttons {
         display: flex;
         flex-wrap: wrap;
-        gap: 4px;
-        margin: 4px 0;
+        gap: 6px;
+        margin: 6px 0;
       }
 
       .pill-buttons button {
         flex: 1 1 30%;
-        font-size: 11px;
-        padding: 4px 6px;
+        font-size: 0; /* hide visible text */
+        padding: 10px 0;
+        border-radius: 999px;
+        cursor: pointer;
+        border: 1px solid #616161;
+        background-color: #212121;
       }
 
       #status {
-        margin-top: 8px;
-        font-size: 12px;
-        color: #555;
+        margin-top: 10px;
+        font-size: 13px;
+        color: #b0b0b0;
       }
 
       .section {
-        border-top: 1px solid #ddd;
-        padding-top: 6px;
-        margin-top: 6px;
+        border-top: 1px solid #333333;
+        padding-top: 10px;
+        margin-top: 10px;
       }
 
       .inline-value {
-        font-size: 11px;
-        color: #444;
+        font-size: 12px;
+        color: #b0b0b0;
+      }
+
+      /* Full-width power button */
+      #light-onoff {
+        width: 100%;
+        padding: 10px 12px;
+        margin-top: 8px;
+        border-radius: 999px;
+        border: none;
+        font-weight: 600;
+        font-size: 14px;
+        color: #ffffff;
+        cursor: pointer;
+      }
+
+      #light-onoff.on {
+        background-color: #2e7d32;
+      }
+
+      #light-onoff.off {
+        background-color: #c62828;
+      }
+
+      /* White presets explicit colors (no visible text) */
+      #white-presets button[data-ct="500"] {
+        background-color: #ffb74d; /* warm */
+      }
+
+      #white-presets button[data-ct="370"] {
+        background-color: #ffe0b2; /* neutral */
+      }
+
+      #white-presets button[data-ct="250"] {
+        background-color: #bbdefb; /* cool */
+      }
+
+      /* Color presets styled by data-color; actual color set via JS
+         but we keep same pill style as whites */
+      #color-presets button {
+        /* inherits pill style + font-size:0 from .pill-buttons button */
+      }
+
+      /* Function button full width */
+      #function-toggle {
+        width: 100%;
+        padding: 10px 12px;
+        margin-top: 8px;
+        border-radius: 999px;
+        border: none;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        background-color: #424242;
+        color: #ffffff;
+      }
+
+      #function-toggle.running {
+        background-color: #2e7d32;
+      }
+
+      /* Slightly larger select text */
+      #light-select,
+      #function-select {
+        font-size: 14px;
       }
     </style>
   </head>
   <body>
-    <h2>Hue Control Panel</h2>
+    <h2>Light Control</h2>
 
     <div>
-      <label for="light-select">Select Light</label>
       <select id="light-select"></select>
     </div>
 
     <div id="light-info">
-      <div class="row">
-        <div class="toggle">
-          <label for="light-onoff">Power</label>
-          <button id="light-onoff">Loading...</button>
-        </div>
-      </div>
-
-      <div class="row">
-        <label for="brightness-slider">
-          Brightness
-          <span id="brightness-value" class="inline-value"></span>
-        </label>
-      </div>
+      <!-- Power button -->
+      <button id="light-onoff">Loading...</button>
       <input
         id="brightness-slider"
         type="range"
@@ -109,39 +171,46 @@
       />
 
       <div class="section">
-        <h3>White Presets</h3>
         <div class="pill-buttons" id="white-presets">
-          <button data-ct="500">Warm</button>
-          <button data-ct="370">Neutral</button>
-          <button data-ct="250">Cool</button>
+          <button data-ct="500" title="Warm"></button>
+          <button data-ct="370" title="Neutral"></button>
+          <button data-ct="250" title="Cool"></button>
         </div>
-      </div>
 
-      <div class="section">
-        <h3>Color Presets</h3>
         <div class="pill-buttons" id="color-presets">
-          <button data-hue="0">Red</button>
-          <button data-hue="8000">Orange</button>
-          <button data-hue="16000">Yellow</button>
-          <button data-hue="25500">Green</button>
-          <button data-hue="35000">Cyan</button>
-          <button data-hue="45000">Blue</button>
-          <button data-hue="50000">Indigo</button>
-          <button data-hue="56000">Violet</button>
-          <button data-hue="65000">Near Red</button>
+          <button data-hue="0" data-color="#ff0000" title="Red">
+            Red
+          </button>
+          <button data-hue="8000" data-color="#ff7f00" title="Orange">
+            Orange
+          </button>
+          <button data-hue="16000" data-color="#ffff00" title="Yellow">
+            Yellow
+          </button>
+          <button data-hue="25500" data-color="#00ff00" title="Green">
+            Green
+          </button>
+          <button data-hue="35000" data-color="#00ffff" title="Cyan">
+            Cyan
+          </button>
+          <button data-hue="45000" data-color="#0000ff" title="Blue">
+            Blue
+          </button>
+          <button data-hue="50000" data-color="#4b0082" title="Indigo">
+            Indigo
+          </button>
+          <button data-hue="56000" data-color="#8b00ff" title="Violet">
+            Violet
+          </button>
+          <button data-hue="65000" data-color="#ff0040" title="Near Red">
+            Near Red
+          </button>
         </div>
       </div>
 
       <div class="section">
-        <h3>Functions</h3>
-        <div class="row">
-          <label for="function-select">Select Function</label>
-        </div>
         <select id="function-select"></select>
-        <div class="row" style="margin-top: 4px">
-          <button id="start-function">Start</button>
-          <button id="stop-function">Stop</button>
-        </div>
+        <button id="function-toggle">No function selected</button>
       </div>
     </div>
 
