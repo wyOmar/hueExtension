@@ -129,8 +129,7 @@ function pickTextColorForBackground(bgColor) {
   const gl = g / 255;
   const bl = b / 255;
 
-  const luminance =
-    0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
+  const luminance = 0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
 
   // threshold tuned a bit higher so bright presets use dark text
   return luminance > 0.55 ? "#000000" : "#ffffff";
@@ -206,17 +205,15 @@ function updateLightDropdownColor(st) {
   const bri = typeof st.bri === "number" ? st.bri : 254;
   const factor = Math.max(0.2, Math.min(1, bri / 254));
 
-  const match =
-    baseCss.match(/hsl\((\d+),\s*([\d.]+)%,\s*([\d.]+)%\)/);
+  const match = baseCss.match(
+    /hsl\((\d+),\s*([\d.]+)%,\s*([\d.]+)%\)/
+  );
   let finalCss = baseCss;
   if (match) {
     const deg = parseInt(match[1], 10);
     const sat = parseFloat(match[2]);
     const light = parseFloat(match[3]);
-    const adjustedLight = Math.max(
-      10,
-      Math.min(60, light * factor)
-    );
+    const adjustedLight = Math.max(10, Math.min(60, light * factor));
     finalCss = `hsl(${deg}, ${sat}%, ${adjustedLight}%)`;
   }
 
@@ -287,6 +284,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const firstId = getSelectedLightId();
     if (firstId) {
+      // Inform background which light is initially selected
+      chrome.runtime.sendMessage({
+        type: "SET_CURRENT_LIGHT",
+        lightId: firstId
+      });
+
       chrome.runtime.sendMessage(
         { type: "GET_LIGHT_STATE", lightId: firstId },
         (resp = {}) => {
@@ -303,6 +306,13 @@ document.addEventListener("DOMContentLoaded", () => {
   lightSelect.addEventListener("change", () => {
     const id = getSelectedLightId();
     if (!id) return;
+
+    // Inform background about the current selected light
+    chrome.runtime.sendMessage({
+      type: "SET_CURRENT_LIGHT",
+      lightId: id
+    });
+
     setStatus("Loading light state...");
     chrome.runtime.sendMessage(
       { type: "GET_LIGHT_STATE", lightId: id },
@@ -514,10 +524,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       tabs.forEach((t) => {
         t.classList.toggle("active", t === tab);
-        t.setAttribute(
-          "aria-selected",
-          t === tab ? "true" : "false"
-        );
+        t.setAttribute("aria-selected", t === tab ? "true" : "false");
       });
 
       panels.forEach((panel) => {

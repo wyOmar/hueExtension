@@ -14,11 +14,11 @@
     "type": "module"
   },
   "commands": {
-    "toggle-popup": {
+    "toggle-current-light": {
       "suggested_key": {
-        "default": "Ctrl+Shift+H"
+        "default": "Ctrl+L"
       },
-      "description": "Open Hue Control Panel popup"
+      "description": "Toggle the currently selected Hue light on/off"
     }
   }
 }

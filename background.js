@@ -12,6 +12,17 @@ const runningFunctions = new Map();
 // lightId -> original state snapshot
 const originalStates = new Map();
 
+// currently selected light (for keyboard shortcut)
+let currentSelectedLightId = null;
+
+function setCurrentSelectedLightId(lightId) {
+  currentSelectedLightId = lightId || null;
+}
+
+function getCurrentSelectedLightId() {
+  return currentSelectedLightId;
+}
+
 // Register functions statically
 function registerFunctions() {
   const list = [rainbowFn]; // add more modules here later
@@ -19,21 +30,16 @@ function registerFunctions() {
   loadedFunctions.clear();
   for (const mod of list) {
     if (!mod.name || typeof mod.run !== "function") {
-      console.warn(
-        "Function module missing required exports:",
-        mod
-      );
+      console.warn("Function module missing required exports:", mod);
       continue;
     }
     loadedFunctions.set(mod.name, mod);
   }
 
-  return Array.from(loadedFunctions.entries()).map(
-    ([name, mod]) => ({
-      name,
-      displayName: mod.displayName || name
-    })
-  );
+  return Array.from(loadedFunctions.entries()).map(([name, mod]) => ({
+    name,
+    displayName: mod.displayName || name
+  }));
 }
 
 // Hue API
@@ -186,7 +192,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.type === "INIT_POPUP") {
         const [lights] = await Promise.all([getLights()]);
         const functions = registerFunctions();
+
+        // Set the first available light as current selected (if any)
+        const entries = Object.keys(lights || {});
+        if (entries.length > 0) {
+          setCurrentSelectedLightId(entries[0]);
+        }
+
         sendResponse({ lights, functions });
+        return;
+      }
+
+      if (message.type === "SET_CURRENT_LIGHT") {
+        setCurrentSelectedLightId(message.lightId || null);
+        sendResponse({ ok: true });
+        return;
+      }
+
+      if (message.type === "GET_CURRENT_LIGHT") {
+        sendResponse({ lightId: getCurrentSelectedLightId() });
         return;
       }
 
@@ -223,4 +247,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   })();
 
   return true;
+});
+
+// Keyboard shortcut command: toggle current selected light
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command !== "toggle-current-light") return;
+
+  try {
+    const lightId = getCurrentSelectedLightId();
+    if (!lightId) {
+      console.warn("No current selected light to toggle.");
+      return;
+    }
+
+    const light = await getLightState(lightId);
+    const currentOn = !!light?.state?.on;
+    const newOn = !currentOn;
+
+    await setLightState(lightId, { on: newOn });
+
+    console.log(
+      `Toggled light ${lightId} ${newOn ? "ON" : "OFF"} via shortcut`
+    );
+  } catch (err) {
+    console.error("Error toggling current light via shortcut", err);
+  }
 });
