@@ -15,8 +15,44 @@ const originalStates = new Map();
 // currently selected light (for keyboard shortcut)
 let currentSelectedLightId = null;
 
-function setCurrentSelectedLightId(lightId) {
+/**
+ * Initialize currentSelectedLightId from chrome.storage.local
+ * so it survives service worker restarts.
+ */
+async function initCurrentSelectedLightId() {
+  try {
+    const stored = await chrome.storage.local.get("currentSelectedLightId");
+    if (stored && stored.currentSelectedLightId) {
+      currentSelectedLightId = stored.currentSelectedLightId;
+      console.log(
+        "[Hue] Restored currentSelectedLightId:",
+        currentSelectedLightId
+      );
+    } else {
+      console.log("[Hue] No stored currentSelectedLightId found.");
+    }
+  } catch (err) {
+    console.warn(
+      "[Hue] Failed to initialize currentSelectedLightId from storage",
+      err
+    );
+  }
+}
+
+// Call init at top level so it runs whenever the service worker starts.
+initCurrentSelectedLightId();
+
+/**
+ * Set current selected light ID both in memory and in storage.
+ */
+async function setCurrentSelectedLightId(lightId) {
   currentSelectedLightId = lightId || null;
+  try {
+    await chrome.storage.local.set({ currentSelectedLightId });
+    console.log("[Hue] Saved currentSelectedLightId:", currentSelectedLightId);
+  } catch (err) {
+    console.warn("[Hue] Failed to save currentSelectedLightId", err);
+  }
 }
 
 function getCurrentSelectedLightId() {
@@ -196,7 +232,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Set the first available light as current selected (if any)
         const entries = Object.keys(lights || {});
         if (entries.length > 0) {
-          setCurrentSelectedLightId(entries[0]);
+          await setCurrentSelectedLightId(entries[0]);
         }
 
         sendResponse({ lights, functions });
@@ -204,7 +240,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
 
       if (message.type === "SET_CURRENT_LIGHT") {
-        setCurrentSelectedLightId(message.lightId || null);
+        await setCurrentSelectedLightId(message.lightId || null);
         sendResponse({ ok: true });
         return;
       }

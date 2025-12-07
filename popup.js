@@ -15,6 +15,7 @@ function getSelectedFunctionName() {
 
 function populateLightsSelect(lights) {
   const select = document.getElementById("light-select");
+  if (!select) return;
   select.innerHTML = "";
 
   const entries = Object.entries(lights || {}).sort(([, a], [, b]) => {
@@ -41,6 +42,7 @@ function populateLightsSelect(lights) {
 
 function populateFunctionsSelect(functions) {
   const select = document.getElementById("function-select");
+  if (!select) return;
   select.innerHTML = "";
 
   if (!functions || functions.length === 0) {
@@ -59,103 +61,6 @@ function populateFunctionsSelect(functions) {
   }
 }
 
-function hueToCss(hue) {
-  if (hue == null) return "#222222";
-  const h = Number(hue);
-  const deg = Math.round((h / 65535) * 360);
-  return `hsl(${deg}, 100%, 50%)`;
-}
-
-function ctToCss(ct) {
-  if (ct == null) return "#222222";
-  const c = Number(ct);
-  if (c >= 450) return "#ffb74d";
-  if (c >= 340) return "#ffe0b2";
-  return "#bbdefb";
-}
-
-/**
- * Compute whether black or white text will be more readable
- * over a given background color string (hex or rgb/hsl).
- */
-function pickTextColorForBackground(bgColor) {
-  if (!bgColor) return "#ffffff";
-
-  const ctx = document.createElement("canvas").getContext("2d");
-  if (!ctx) return "#ffffff";
-
-  ctx.fillStyle = bgColor;
-  const computed = ctx.fillStyle;
-
-  // Handle hex (#rrggbb) and rgb(a)
-  let r = 0;
-  let g = 0;
-  let b = 0;
-
-  if (computed.startsWith("#")) {
-    const hex = computed.slice(1);
-    if (hex.length === 3) {
-      r = parseInt(hex[0] + hex[0], 16);
-      g = parseInt(hex[1] + hex[1], 16);
-      b = parseInt(hex[2] + hex[2], 16);
-    } else if (hex.length === 6) {
-      r = parseInt(hex.slice(0, 2), 16);
-      g = parseInt(hex.slice(2, 4), 16);
-      b = parseInt(hex.slice(4, 6), 16);
-    }
-  } else if (computed.startsWith("rgb")) {
-    const nums = computed
-      .replace(/rgba?\(/, "")
-      .replace(/\)/, "")
-      .split(",")
-      .map((x) => parseFloat(x.trim()));
-    [r, g, b] = nums;
-  } else if (computed.startsWith("hsl")) {
-    // let the browser convert HSL to RGB via fillStyle
-    // we already assigned it above, so just re-read as RGB
-    ctx.fillStyle = computed;
-    const rgb = ctx.fillStyle;
-    if (rgb.startsWith("rgb")) {
-      const nums = rgb
-        .replace(/rgba?\(/, "")
-        .replace(/\)/, "")
-        .split(",")
-        .map((x) => parseFloat(x.trim()));
-      [r, g, b] = nums;
-    }
-  }
-
-  const rl = r / 255;
-  const gl = g / 255;
-  const bl = b / 255;
-
-  const luminance = 0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
-
-  // threshold tuned a bit higher so bright presets use dark text
-  return luminance > 0.55 ? "#000000" : "#ffffff";
-}
-
-/**
- * For preset buttons that specify a color with data-color,
- * set background and compute a readable text color.
- */
-function setButtonColorWithContrast(button) {
-  const bg = button.dataset.color;
-  if (!bg) return;
-  button.style.backgroundColor = bg;
-  button.style.color = pickTextColorForBackground(bg);
-}
-
-/**
- * For CT-based preset buttons, use their current background color
- * (from CSS) and assign readable text color.
- */
-function setCtButtonContrast(button) {
-  const style = getComputedStyle(button);
-  const bg = style.backgroundColor;
-  button.style.color = pickTextColorForBackground(bg);
-}
-
 function updateFunctionButtonText(running) {
   const fnSelect = document.getElementById("function-select");
   const fnToggle = document.getElementById("function-toggle");
@@ -167,7 +72,6 @@ function updateFunctionButtonText(running) {
 
   if (!fnName) {
     fnToggle.textContent = "No function selected";
-    fnToggle.classList.remove("running");
     fnToggle.disabled = true;
     return;
   }
@@ -176,49 +80,9 @@ function updateFunctionButtonText(running) {
 
   if (running) {
     fnToggle.textContent = `Stop ${fnLabel}`;
-    fnToggle.classList.add("running");
   } else {
     fnToggle.textContent = `Start ${fnLabel}`;
-    fnToggle.classList.remove("running");
   }
-}
-
-function updateLightDropdownColor(st) {
-  const select = document.getElementById("light-select");
-  if (!select || !st) return;
-
-  if (!st.on) {
-    select.style.background = "#000000";
-    select.style.color = "#ffffff";
-    return;
-  }
-
-  let baseCss;
-  if (st.colormode === "ct" && st.ct != null) {
-    baseCss = ctToCss(st.ct);
-  } else if ((st.colormode === "hs" || st.hue != null) && st.hue != null) {
-    baseCss = hueToCss(st.hue);
-  } else {
-    baseCss = "#444444";
-  }
-
-  const bri = typeof st.bri === "number" ? st.bri : 254;
-  const factor = Math.max(0.2, Math.min(1, bri / 254));
-
-  const match = baseCss.match(
-    /hsl\((\d+),\s*([\d.]+)%,\s*([\d.]+)%\)/
-  );
-  let finalCss = baseCss;
-  if (match) {
-    const deg = parseInt(match[1], 10);
-    const sat = parseFloat(match[2]);
-    const light = parseFloat(match[3]);
-    const adjustedLight = Math.max(10, Math.min(60, light * factor));
-    finalCss = `hsl(${deg}, ${sat}%, ${adjustedLight}%)`;
-  }
-
-  select.style.background = finalCss;
-  select.style.color = pickTextColorForBackground(finalCss);
 }
 
 function updateLightUI(lightState) {
@@ -233,8 +97,6 @@ function updateLightUI(lightState) {
     const isOn = !!st.on;
     onOffBtn.textContent = isOn ? "ON" : "OFF";
     onOffBtn.dataset.on = isOn ? "1" : "0";
-    onOffBtn.classList.toggle("on", isOn);
-    onOffBtn.classList.toggle("off", !isOn);
   }
 
   if (briSlider && typeof st.bri === "number") {
@@ -244,8 +106,6 @@ function updateLightUI(lightState) {
     const pct = Math.round((st.bri / 254) * 100);
     briValue.textContent = `(${pct}%)`;
   }
-
-  updateLightDropdownColor(st);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -255,16 +115,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const colorPresets = document.getElementById("color-presets");
   const fnSelect = document.getElementById("function-select");
   const fnToggle = document.getElementById("function-toggle");
-
-  // Style hue-based color preset buttons
-  Array.from(colorPresets.querySelectorAll("button[data-color]")).forEach(
-    setButtonColorWithContrast
-  );
-
-  // Also ensure CT-based buttons (Warm/Neutral/Cool) have readable text
-  Array.from(colorPresets.querySelectorAll("button[data-ct]")).forEach(
-    setCtButtonContrast
-  );
 
   chrome.runtime.sendMessage({ type: "INIT_POPUP" }, (response = {}) => {
     if (chrome.runtime.lastError) {
@@ -284,7 +134,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const firstId = getSelectedLightId();
     if (firstId) {
-      // Inform background which light is initially selected
       chrome.runtime.sendMessage({
         type: "SET_CURRENT_LIGHT",
         lightId: firstId
@@ -307,7 +156,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const id = getSelectedLightId();
     if (!id) return;
 
-    // Inform background about the current selected light
     chrome.runtime.sendMessage({
       type: "SET_CURRENT_LIGHT",
       lightId: id
@@ -391,7 +239,6 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   });
 
-  // Unified presets handler: CT or HUE depending on attributes
   colorPresets.addEventListener("click", (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
@@ -478,6 +325,7 @@ document.addEventListener("DOMContentLoaded", () => {
         (resp = {}) => {
           if (resp.error) setStatus(`Error: ${resp.error}`);
           else {
+            fnToggle.classList.remove("running");
             updateFunctionButtonText(false);
             chrome.runtime.sendMessage(
               { type: "GET_LIGHT_STATE", lightId },
@@ -500,6 +348,7 @@ document.addEventListener("DOMContentLoaded", () => {
         (resp = {}) => {
           if (resp.error) setStatus(`Error: ${resp.error}`);
           else {
+            fnToggle.classList.add("running");
             updateFunctionButtonText(true);
             chrome.runtime.sendMessage(
               { type: "GET_LIGHT_STATE", lightId },
@@ -514,8 +363,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  const tabs = document.querySelectorAll(".tab");
-  const panels = document.querySelectorAll(".tab-panel");
+  const tabs = document.querySelectorAll('[role="tab"]');
+  const panels = document.querySelectorAll('[role="tabpanel"]');
 
   tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
@@ -523,27 +372,16 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!target) return;
 
       tabs.forEach((t) => {
-        t.classList.toggle("active", t === tab);
-        t.setAttribute("aria-selected", t === tab ? "true" : "false");
+        t.setAttribute(
+          "aria-selected",
+          t === tab ? "true" : "false"
+        );
       });
 
       panels.forEach((panel) => {
         const name = panel.dataset.tabPanel;
-        panel.classList.toggle("active", name === target);
+        panel.hidden = name !== target;
       });
     });
   });
-
-  /*
-  const themeToggle = document.getElementById("theme-toggle");
-  if (themeToggle) {
-    themeToggle.addEventListener("click", () => {
-      const body = document.body;
-      const current = body.getAttribute("data-theme") || "dark";
-      const next = current === "dark" ? "light" : "dark";
-      body.setAttribute("data-theme", next);
-      themeToggle.textContent = next === "dark" ? "☾" : "☀";
-    });
-  }
-  */
 });

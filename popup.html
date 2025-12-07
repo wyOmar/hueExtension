@@ -1,174 +1,144 @@
 <!DOCTYPE html>
-<html data-theme="dark">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8" />
-    <title>Light Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hue Control Panel</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <div class="popup-root">
-      <header class="popup-header">
-        <h1 class="popup-title"></h1>
-        <!-- Optional theme toggle -->
-        <!-- <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">☾</button> -->
+    <div class="container">
+      <!-- Header -->
+      <header class="header">
+        <h1>Hue Control</h1>
       </header>
 
-      <nav class="tabs" role="tablist">
-        <button
-          class="tab active"
-          data-tab="basic"
-          role="tab"
-          aria-selected="true"
-        >
-          Basic
-        </button>
-        <button class="tab" data-tab="color" role="tab" aria-selected="false">
-          Color
-        </button>
-        <button
-          class="tab"
-          data-tab="effects"
-          role="tab"
-          aria-selected="false"
-        >
-          Effects
-        </button>
-      </nav>
+      <!-- Light Selection Card -->
+      <div class="card">
+        <div class="card-section">
+          <label for="light-select" class="label">Select Light</label>
+          <select id="light-select" class="select"></select>
+        </div>
+      </div>
 
-      <main class="tab-panels">
-        <!-- BASIC TAB -->
-        <section
-          class="tab-panel active"
-          data-tab-panel="basic"
-          role="tabpanel"
-        >
-          <div class="card">
-            <label for="light-select" class="field-label"></label>
-            <div class="select-row">
-              <span class="select-icon" aria-hidden="true">💡</span>
-              <select id="light-select"></select>
-            </div>
+      <!-- Power & Brightness Card -->
+      <div class="card">
+        <!-- Power Toggle -->
+        <div class="card-section">
+          <button id="light-onoff" class="power-button" data-on="0">
+            <svg class="icon icon-power" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+              <line x1="12" y1="2" x2="12" y2="12"></line>
+            </svg>
+            <span class="power-label">Power</span>
+          </button>
+        </div>
+
+        <!-- Brightness Slider -->
+        <div class="card-section">
+          <div class="brightness-header">
+            <svg class="icon icon-brightness" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <label for="brightness-slider" class="label">Brightness</label>
+            <span id="brightness-value" class="brightness-value">(100%)</span>
           </div>
+          <input
+            id="brightness-slider"
+            type="range"
+            min="1"
+            max="254"
+            step="1"
+            value="254"
+            class="slider"
+          />
+        </div>
+      </div>
 
-          <div class="card">
-            <button id="light-onoff" class="btn-primary">Loading...</button>
+      <!-- Color Presets Card -->
+      <div class="card">
+        <div class="card-section">
+          <label class="label">Color & White</label>
+          <div id="color-presets" class="presets-grid">
+            <!-- Whites (CT) -->
+            <button data-ct="500" class="preset preset-warm" title="Warm White">
+              <span class="preset-dot"></span>
+              <span class="preset-label">Warm</span>
+            </button>
+            <button data-ct="370" class="preset preset-neutral" title="Neutral White">
+              <span class="preset-dot"></span>
+              <span class="preset-label">Neutral</span>
+            </button>
+            <button data-ct="250" class="preset preset-cool" title="Cool White">
+              <span class="preset-dot"></span>
+              <span class="preset-label">Cool</span>
+            </button>
 
-            <div class="field">
-              <div class="field-header">
-                <label for="brightness-slider" class="field-label">
-                  
-                </label>
-                <span
-                  
-                  class="inline-value"
-                ></span>
-              </div>
-              <input
-                id="brightness-slider"
-                type="range"
-                min="1"
-                max="254"
-                step="1"
-                value="254"
-              />
-            </div>
-          </div>
-        </section>
-
-        <!-- COLOR TAB -->
-        <section class="tab-panel" data-tab-panel="color" role="tabpanel">
-          <div class="card card-color">
-            <div class="field-header card-color-header">
-              
-            </div>
-
-            <!-- ONE unified presets grid -->
-            <div class="pill-buttons pill-grid" id="color-presets">
-              <!-- Whites first (still use CT in JS) -->
-              <button data-ct="500" title="Warm White">Warm</button>
-              <button data-ct="370" title="Neutral White">Neutral</button>
-              <button data-ct="250" title="Cool White">Cool</button>
-
-              <!-- Hue colors (HS) -->
-              <button data-hue="0" data-color="#ff0000" title="Red">
-                Red
-              </button>
-              <button
-                data-hue="8000"
-                data-color="#ff7f00"
-                title="Orange"
-              >
-                Orange
-              </button>
-              <button
-                data-hue="16000"
-                data-color="#ffff00"
-                title="Yellow"
-              >
-                Yellow
-              </button>
-              <button
-                data-hue="25500"
-                data-color="#00ff00"
-                title="Green"
-              >
-                Green
-              </button>
-              <button
-                data-hue="35000"
-                data-color="#00ffff"
-                title="Cyan"
-              >
-                Cyan
-              </button>
-              <button
-                data-hue="45000"
-                data-color="#0000ff"
-                title="Blue"
-              >
-                Blue
-              </button>
-              <button
-                data-hue="50000"
-                data-color="#4b0082"
-                title="Indigo"
-              >
-                Indigo
-              </button>
-              <button
-                data-hue="56000"
-                data-color="#8b00ff"
-                title="Violet"
-              >
-                Violet
-              </button>
-              <button
-                data-hue="65000"
-                data-color="#ff0040"
-                title="Near Red"
-              >
-                Near Red
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <!-- EFFECTS TAB -->
-        <section class="tab-panel" data-tab-panel="effects" role="tabpanel">
-          <div class="card">
-            <div class="field">
-
-              <select id="function-select"></select>
-            </div>
-            <button id="function-toggle" class="btn-secondary">
-              No function selected
+            <!-- Hue colors (HS) -->
+            <button data-hue="0" class="preset preset-red" title="Red">
+              <span class="preset-dot"></span>
+              <span class="preset-label">Red</span>
+            </button>
+            <button data-hue="8000" class="preset preset-orange" title="Orange">
+              <span class="preset-dot"></span>
+              <span class="preset-label">Orange</span>
+            </button>
+            <button data-hue="16000" class="preset preset-yellow" title="Yellow">
+              <span class="preset-dot"></span>
+              <span class="preset-label">Yellow</span>
+            </button>
+            <button data-hue="25500" class="preset preset-green" title="Green">
+              <span class="preset-dot"></span>
+              <span class="preset-label">Green</span>
+            </button>
+            <button data-hue="35000" class="preset preset-cyan" title="Cyan">
+              <span class="preset-dot"></span>
+              <span class="preset-label">Cyan</span>
+            </button>
+            <button data-hue="45000" class="preset preset-blue" title="Blue">
+              <span class="preset-dot"></span>
+              <span class="preset-label">Blue</span>
+            </button>
+            <button data-hue="50000" class="preset preset-indigo" title="Indigo">
+              <span class="preset-dot"></span>
+              <span class="preset-label">Indigo</span>
+            </button>
+            <button data-hue="56000" class="preset preset-violet" title="Violet">
+              <span class="preset-dot"></span>
+              <span class="preset-label">Violet</span>
+            </button>
+            <button data-hue="65000" class="preset preset-magenta" title="Magenta">
+              <span class="preset-dot"></span>
+              <span class="preset-label">Magenta</span>
             </button>
           </div>
-        </section>
-      </main>
+        </div>
+      </div>
 
-      <footer id="status-bar">
-        <span id="status">Loading lights...</span>
+      <!-- Effects Card -->
+      <div class="card">
+        <div class="card-section">
+          <label for="function-select" class="label">Effects</label>
+          <select id="function-select" class="select"></select>
+        </div>
+        <div class="card-section">
+          <button id="function-toggle" class="button button-secondary">
+            No function selected
+          </button>
+        </div>
+      </div>
+
+      <!-- Status Bar -->
+      <footer class="status-bar">
+        <span id="status" class="status-text">Loading...</span>
       </footer>
     </div>
 
