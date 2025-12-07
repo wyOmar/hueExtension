@@ -18,7 +18,7 @@
       "suggested_key": {
         "default": "Ctrl+L"
       },
-      "description": "Toggle the currently selected Hue light on/off"
+      "description": "Toggle Light"
     }
   }
 }
